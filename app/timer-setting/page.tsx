@@ -2,6 +2,7 @@
 
 import { Button, Input, TimePicker } from 'antd';
 import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import React, { useRef } from 'react';
@@ -12,25 +13,18 @@ import { NotificationConstant } from '~/constants/NotificationConstant';
 import useLocalStorage from '~/hooks/useLocalStorage';
 import Container from '~/layouts/Container';
 import PageContainer from '~/layouts/PageContainer';
-import { TimerSetting } from '~/types/timer-setting';
+import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
 import { nameof } from '~/utils/nameof';
 
-interface Props {}
+dayjs.extend(customParseFormat);
 
-const initTimerSetting: TimerSetting = {
-    checkingTime: '00:00',
-    lunchTime: {
-        startTime: '00:00',
-        endTime: '00:00',
-    },
-    workingHours: 0,
-};
+interface Props {}
 
 const TimerSettingPage: React.FC<Props> = props => {
     const formRef = useRef<FormBaseRef>(null);
     const [timerSetting, setTimerSetting] = useLocalStorage<TimerSetting>(
         LocalStorageConstant.TIMER_SETTING,
-        initTimerSetting,
+        DEFAULT_TIMER_SETTING,
     );
 
     const handleSave = async () => {
