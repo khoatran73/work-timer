@@ -25,6 +25,7 @@ export type FormBaseItem = Partial<FormItemInputProps & FormItemLabelProps> & {
     valuePropName?: string;
     style?: React.CSSProperties;
     children?: React.ReactNode;
+    withoutFormItem?: boolean;
 };
 
 export interface FieldData {
@@ -77,7 +78,11 @@ const FormBase = React.forwardRef<FormBaseRef, FormBaseProps>((props, ref) => {
                     width: props.width,
                 }}
             >
-                {props.formBaseItems?.map((item) => {
+                {props.formBaseItems?.map(item => {
+                    if (item.withoutFormItem) {
+                        return item.children;
+                    }
+
                     return (
                         <Form.Item key={item.name} {...item}>
                             {item.children}
