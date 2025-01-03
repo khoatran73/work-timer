@@ -8,7 +8,7 @@ interface Props extends PropsWithChildren {
 
 const PageContainer: React.FC<Props> = ({ children, className, wrapperClassName }) => {
     return (
-        <div className={clsx('w-screen h-screen bg-[#1E1E1E] text-[#1E1E1E]', wrapperClassName)}>
+        <div className={clsx('w-screen h-screen', wrapperClassName)}>
             <div className={clsx('w-full h-full overflow-x-hidden overflow-y-auto', className)}>
                 {children}
             </div>

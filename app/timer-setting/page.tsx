@@ -1,8 +1,10 @@
 'use client';
 
-import { Button, Input, TimePicker } from 'antd';
+import { HomeTwoTone } from '@ant-design/icons';
+import { Button, FloatButton, Input, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { motion } from 'framer-motion';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import React, { useRef } from 'react';
@@ -121,6 +123,23 @@ const TimerSettingPage: React.FC<Props> = props => {
                     />
                 </div>
             </Container>
+            {!_.isEqual(timerSetting, DEFAULT_TIMER_SETTING) && (
+                <FloatButton
+                    href="/"
+                    tooltip={<div>Home</div>}
+                    type="default"
+                    shape="circle"
+                    icon={
+                        <motion.div
+                            initial={{ '--scale': 0.8 }}
+                            animate={{ '--scale': 1.2 }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0, ease: 'easeInOut' }}
+                        >
+                            <HomeTwoTone style={{ transform: 'scale(var(--scale))' }} twoToneColor="#637381" />
+                        </motion.div>
+                    }
+                />
+            )}
         </PageContainer>
     );
 };

@@ -1,16 +1,22 @@
 'use client';
 
+import { FloatButton } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Box from '~/components/Box';
+import CircleProgressClock from '~/components/CircleProgressClock';
+import DigitalClock from '~/components/DigitalClock';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
 import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
 import useLocalStorage from '~/hooks/useLocalStorage';
 import Container from '~/layouts/Container';
 import PageContainer from '~/layouts/PageContainer';
 import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
+import { SettingTwoTone } from '@ant-design/icons';
+import { motion } from 'framer-motion';
 
 dayjs.extend(customParseFormat);
 
@@ -65,8 +71,8 @@ const HomePage: React.FC<Props> = props => {
         return () => clearInterval(interval);
     }, []);
 
-    const calculateRemainingTime = (now: dayjs.Dayjs, target: dayjs.Dayjs) => {
-        const remainingMinutes = target.diff(now, 'minute');
+    const calculateRemainingTime = (current: dayjs.Dayjs, target: dayjs.Dayjs) => {
+        const remainingMinutes = target.diff(current, 'minute');
         return {
             hour: Math.floor(remainingMinutes / 60),
             minute: remainingMinutes % 60,
@@ -123,9 +129,57 @@ const HomePage: React.FC<Props> = props => {
 
     return (
         <PageContainer>
-            <Container className="flex items-center justify-center text-white">
-                <div className="w-full h-full">
-                    {state.remainingToLunchTime.hour > 0 && (
+            <Container className="flex items-center justify-center">
+                <div className="w-full h-full grid grid-cols-2 gap-4">
+                    <Box
+                        header={{
+                            title: 'Remaining To Lunch Time',
+                            subTitle: 'Thời gian còn lại đến giờ Nghỉ trưa',
+                        }}
+                        className="flex items-center justify-center h-[220px]"
+                    >
+                        <CircleProgressClock
+                            time={state.remainingToLunchTime}
+                            total={calculateRemainingTime(
+                                dayjs(timerSetting.checkingTime, DateTimeConstant.HH_MM),
+                                dayjs(timerSetting.lunchTime.startTime, DateTimeConstant.HH_MM),
+                            )}
+                        />
+                    </Box>
+                    <Box
+                        header={{
+                            title: 'Remaining To Checkout Time',
+                            subTitle: 'Thời gian còn lại đến giờ Checkout',
+                        }}
+                        className="flex items-center justify-center h-[220px]"
+                    >
+                        <CircleProgressClock
+                            time={state.remainingToCheckoutTime}
+                            total={{
+                                hour: 0,
+                                minute: timerSetting.workingHours * 60,
+                            }}
+                        />
+                    </Box>
+                    <Box
+                        header={{
+                            title: 'Worked Duration',
+                            subTitle: 'Thời gian Đã làm việc',
+                        }}
+                        className="flex items-center justify-center h-[220px]"
+                    >
+                        <DigitalClock time={state.workedDuration} className="text-[#00B8D9]" />
+                    </Box>
+                    <Box
+                        header={{
+                            title: 'Checkout Time',
+                            subTitle: 'Có thể checkout khi đến thời gian này',
+                        }}
+                        className="flex items-center justify-center h-[220px]"
+                    >
+                        <DigitalClock time={state.checkoutTime} className="text-[#FF5630]" />
+                    </Box>
+                    {/* {state.remainingToLunchTime.hour > 0 && (
                         <div>{formatTime(state.remainingToLunchTime)} nữa là đến giờ ăn trưa rùi nà</div>
                     )}
                     {state.remainingToCheckoutTime.hour > 0 && (
@@ -136,9 +190,24 @@ const HomePage: React.FC<Props> = props => {
                     )}
                     {state.checkoutTime.hour > 0 && (
                         <div>Giờ kết thúc làm việc của bạn là {formatTime(state.checkoutTime)} nà</div>
-                    )}
+                    )} */}
                 </div>
             </Container>
+            <FloatButton
+                href="/timer-setting"
+                tooltip={<div>Setting</div>}
+                type="default"
+                shape="circle"
+                icon={
+                    <motion.div
+                        initial={{ '--rotate': '0deg' }}
+                        animate={{ '--rotate': '360deg' }}
+                        transition={{ duration: 5, repeat: Infinity, delay: 0, ease: 'linear' }}
+                    >
+                        <SettingTwoTone style={{ transform: 'rotate(var(--rotate))' }} twoToneColor="#637381" />
+                    </motion.div>
+                }
+            />
         </PageContainer>
     );
 };
