@@ -7,7 +7,8 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { motion } from 'framer-motion';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Box from '~/components/Box';
 import FormBase, { FormBaseRef } from '~/components/FormBase';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
 import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
@@ -28,6 +29,7 @@ const TimerSettingPage: React.FC<Props> = props => {
         LocalStorageConstant.TIMER_SETTING,
         DEFAULT_TIMER_SETTING,
     );
+    const [domLoaded, setDomLoaded] = useState(false);
 
     const handleSave = async () => {
         const isValidForm = await formRef.current?.isFieldsValidate();
@@ -39,6 +41,7 @@ const TimerSettingPage: React.FC<Props> = props => {
 
         const setting: TimerSetting = {
             checkingTime: params.checkingTime.format(DateTimeConstant.HH_MM),
+            startWorkingTime: params.startWorkingTime.format(DateTimeConstant.HH_MM),
             lunchTime: {
                 startTime: params.lunchTime[0].format(DateTimeConstant.HH_MM),
                 endTime: params.lunchTime[1].format(DateTimeConstant.HH_MM),
@@ -51,21 +54,25 @@ const TimerSettingPage: React.FC<Props> = props => {
         redirect('/');
     };
 
-    const handleReset = () => {
-        formRef.current?.resetFields();
-    };
+    useEffect(() => {
+        setDomLoaded(true);
+    }, []);
 
+    if (!domLoaded) return <></>;
     return (
         <PageContainer>
             <Container className="flex items-center justify-center">
-                <div className="w-[500px] rounded-xl p-4 bg-white shadow">
-                    <div className="mb-6">
-                        <div className="text-2xl font-bold">Timer Setting</div>
-                    </div>
+                <Box
+                    header={{
+                        title: 'Timer Setting',
+                    }}
+                    wrapperClassName="w-[500px]"
+                >
                     <FormBase
                         ref={formRef}
                         initialValues={{
                             checkingTime: dayjs(timerSetting.checkingTime, DateTimeConstant.HH_MM),
+                            startWorkingTime: dayjs(timerSetting.startWorkingTime, DateTimeConstant.HH_MM),
                             workingHours: timerSetting.workingHours,
                             lunchTime: [
                                 dayjs(timerSetting.lunchTime.startTime, DateTimeConstant.HH_MM),
@@ -84,6 +91,18 @@ const TimerSettingPage: React.FC<Props> = props => {
                                 ),
                                 rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
                                 label: 'Checking Time',
+                            },
+                            {
+                                name: nameof.full<TimerSetting>(x => x.startWorkingTime),
+                                children: (
+                                    <TimePicker
+                                        type="time"
+                                        placeholder="Start Working Time"
+                                        format={DateTimeConstant.HH_MM}
+                                    />
+                                ),
+                                rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
+                                label: 'Start Working Time',
                             },
                             {
                                 name: nameof.full<TimerSetting>(x => x.workingHours),
@@ -105,7 +124,7 @@ const TimerSettingPage: React.FC<Props> = props => {
                             },
                         ]}
                         labelAlign="left"
-                        labelCol={7}
+                        labelCol={8}
                         className={'w-full flex items-center justify-center flex-col'}
                         width={'100%'}
                         renderBtnBottom={() => {
@@ -114,14 +133,14 @@ const TimerSettingPage: React.FC<Props> = props => {
                                     <Button type="primary" onClick={() => handleSave()}>
                                         Save Setting
                                     </Button>
-                                    <Button type="default" onClick={() => handleReset()}>
+                                    {/* <Button type="default" onClick={() => handleReset()}>
                                         Reset
-                                    </Button>
+                                    </Button> */}
                                 </div>
                             );
                         }}
                     />
-                </div>
+                </Box>
             </Container>
             {!_.isEqual(timerSetting, DEFAULT_TIMER_SETTING) && (
                 <FloatButton

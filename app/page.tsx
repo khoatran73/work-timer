@@ -17,6 +17,8 @@ import PageContainer from '~/layouts/PageContainer';
 import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
 import { SettingTwoTone } from '@ant-design/icons';
 import { motion } from 'framer-motion';
+import { DateTime } from '~/types/date-time';
+import clsx from 'clsx';
 
 dayjs.extend(customParseFormat);
 
@@ -34,11 +36,15 @@ interface TimeDisplay {
     hour: number;
 }
 
+const ONE_MINUTE_TO_MS = 60000;
+const ONE_SECOND_TO_MS = 1000;
+
 const HomePage: React.FC<Props> = props => {
     const [timerSetting, setTimerSetting] = useLocalStorage<TimerSetting>(
         LocalStorageConstant.TIMER_SETTING,
         DEFAULT_TIMER_SETTING,
     );
+    const [domLoaded, setDomLoaded] = useState(false);
     const [state, setState] = useState<State>({
         remainingToLunchTime: {
             hour: 0,
@@ -59,6 +65,10 @@ const HomePage: React.FC<Props> = props => {
     });
 
     useEffect(() => {
+        setDomLoaded(true);
+    }, []);
+
+    useEffect(() => {
         if (_.isEqual(timerSetting, DEFAULT_TIMER_SETTING)) {
             redirect('/timer-setting');
             return;
@@ -66,13 +76,31 @@ const HomePage: React.FC<Props> = props => {
 
         const interval = setInterval(() => {
             calcTime(dayjs());
-        }, 1000);
+        }, ONE_SECOND_TO_MS);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const checkReset = () => {
+            const now = new Date();
+            // Reset Checking Time at 00:01 every day
+            if (now.getHours() === 11 && now.getMinutes() === 3) {
+                setTimerSetting(setting => ({
+                    ...setting,
+                    checkingTime: '00:00',
+                }));
+                redirect('/timer-setting');
+            }
+        };
+
+        const interval = setInterval(checkReset, ONE_MINUTE_TO_MS);
 
         return () => clearInterval(interval);
     }, []);
 
     const calculateRemainingTime = (current: dayjs.Dayjs, target: dayjs.Dayjs) => {
-        const remainingMinutes = target.diff(current, 'minute');
+        const remainingMinutes = target.diff(current, 'm');
         return {
             hour: Math.floor(remainingMinutes / 60),
             minute: remainingMinutes % 60,
@@ -86,25 +114,29 @@ const HomePage: React.FC<Props> = props => {
         lunchDuration: number,
     ) => {
         if (now.isAfter(lunchTime.end)) {
-            return now.diff(checkingTime, 'minute') - lunchDuration;
+            return now.diff(checkingTime, 'm') - lunchDuration;
         } else if (now.isBefore(lunchTime.start)) {
-            return now.diff(checkingTime, 'minute');
+            return now.diff(checkingTime, 'm');
         } else {
-            return now.diff(checkingTime, 'minute') - now.diff(lunchTime.start, 'minute');
+            return now.diff(checkingTime, 'm') - now.diff(lunchTime.start, 'm');
         }
     };
 
+    const formatTime = (time: DateTime) => dayjs(time, DateTimeConstant.HH_MM);
+
     const calcTime = (now: dayjs.Dayjs) => {
-        const checkingTime = dayjs(timerSetting.checkingTime, DateTimeConstant.HH_MM);
+        const checkingTime = formatTime(timerSetting.checkingTime).isAfter(formatTime(timerSetting.startWorkingTime))
+            ? formatTime(timerSetting.checkingTime)
+            : formatTime(timerSetting.startWorkingTime);
 
         const lunchTime = {
-            start: dayjs(timerSetting.lunchTime.startTime, DateTimeConstant.HH_MM),
-            end: dayjs(timerSetting.lunchTime.endTime, DateTimeConstant.HH_MM),
+            start: formatTime(timerSetting.lunchTime.startTime),
+            end: formatTime(timerSetting.lunchTime.endTime),
         };
 
-        const lunchDuration = lunchTime.end.diff(lunchTime.start, 'minute');
+        const lunchDuration = lunchTime.end.diff(lunchTime.start, 'm');
         const toLunch = calculateRemainingTime(now, lunchTime.start);
-        const checkoutTime = checkingTime.add(timerSetting.workingHours, 'hour').add(lunchDuration, 'minute');
+        const checkoutTime = checkingTime.add(timerSetting.workingHours, 'hour').add(lunchDuration, 'm');
         const toCheckout = calculateRemainingTime(now, checkoutTime);
 
         const workedDuration = calculateWorkedDuration(now, checkingTime, lunchTime, lunchDuration);
@@ -123,28 +155,36 @@ const HomePage: React.FC<Props> = props => {
         });
     };
 
-    const formatTime = (time: TimeDisplay) => {
-        return `${time.hour} giờ` + (time.minute > 0 ? ` ${time.minute} phút` : '');
-    };
-
+    if (!domLoaded) return <></>;
     return (
         <PageContainer>
             <Container className="flex items-center justify-center">
-                <div className="w-full h-full grid grid-cols-2 gap-4">
+                <div className={clsx('w-full h-full grid gap-4 grid-cols-12')}>
                     <Box
                         header={{
                             title: 'Remaining To Lunch Time',
                             subTitle: 'Thời gian còn lại đến giờ Nghỉ trưa',
                         }}
                         className="flex items-center justify-center h-[220px]"
+                        wrapperClassName="lg:col-span-4 sm:col-span-12"
                     >
                         <CircleProgressClock
                             time={state.remainingToLunchTime}
                             total={calculateRemainingTime(
-                                dayjs(timerSetting.checkingTime, DateTimeConstant.HH_MM),
-                                dayjs(timerSetting.lunchTime.startTime, DateTimeConstant.HH_MM),
+                                formatTime(timerSetting.checkingTime),
+                                formatTime(timerSetting.lunchTime.startTime),
                             )}
                         />
+                    </Box>
+                    <Box
+                        header={{
+                            title: 'Worked Duration',
+                            subTitle: 'Thời gian Đã làm việc',
+                        }}
+                        className="flex items-center justify-center h-[220px]"
+                        wrapperClassName="lg:col-span-8 sm:col-span-12"
+                    >
+                        <DigitalClock time={state.workedDuration} className="text-[#00B8D9]" />
                     </Box>
                     <Box
                         header={{
@@ -152,6 +192,7 @@ const HomePage: React.FC<Props> = props => {
                             subTitle: 'Thời gian còn lại đến giờ Checkout',
                         }}
                         className="flex items-center justify-center h-[220px]"
+                        wrapperClassName="lg:col-span-4 sm:col-span-12"
                     >
                         <CircleProgressClock
                             time={state.remainingToCheckoutTime}
@@ -163,34 +204,14 @@ const HomePage: React.FC<Props> = props => {
                     </Box>
                     <Box
                         header={{
-                            title: 'Worked Duration',
-                            subTitle: 'Thời gian Đã làm việc',
-                        }}
-                        className="flex items-center justify-center h-[220px]"
-                    >
-                        <DigitalClock time={state.workedDuration} className="text-[#00B8D9]" />
-                    </Box>
-                    <Box
-                        header={{
                             title: 'Checkout Time',
                             subTitle: 'Có thể checkout khi đến thời gian này',
                         }}
                         className="flex items-center justify-center h-[220px]"
+                        wrapperClassName="lg:col-span-8 sm:col-span-12"
                     >
                         <DigitalClock time={state.checkoutTime} className="text-[#FF5630]" />
                     </Box>
-                    {/* {state.remainingToLunchTime.hour > 0 && (
-                        <div>{formatTime(state.remainingToLunchTime)} nữa là đến giờ ăn trưa rùi nà</div>
-                    )}
-                    {state.remainingToCheckoutTime.hour > 0 && (
-                        <div>Còn {formatTime(state.remainingToCheckoutTime)} nữa là đi dìa được rùi nà</div>
-                    )}
-                    {state.workedDuration.hour > 0 && (
-                        <div>Đã làm việc được {formatTime(state.workedDuration)} rùi nà</div>
-                    )}
-                    {state.checkoutTime.hour > 0 && (
-                        <div>Giờ kết thúc làm việc của bạn là {formatTime(state.checkoutTime)} nà</div>
-                    )} */}
                 </div>
             </Container>
             <FloatButton

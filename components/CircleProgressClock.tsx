@@ -19,12 +19,16 @@ const strokeColor: ProgressProps['strokeColor'] = {
 
 const CircleProgressClock: React.FC<Props> = ({ time, total }) => {
     const formatTime = ({ time }: Pick<Props, 'time'>) => {
+        if (time.hour < 0 || time.minute < 0) return '00:00';
+
         const hourStr = String(time.hour).padStart(2, '0');
         const minuteStr = String(time.minute).padStart(2, '0');
         return `${hourStr}:${minuteStr}`;
     };
 
     const calcPercent = () => {
+        if (time.hour < 0 || time.minute < 0) return 100;
+
         var totalMinutes = total.minute + total.hour * 60;
         var minute = time.minute + time.hour * 60;
 
