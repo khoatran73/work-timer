@@ -1,8 +1,11 @@
 'use client';
 
+import { SettingTwoTone } from '@ant-design/icons';
 import { FloatButton } from 'antd';
+import clsx from 'clsx';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { motion } from 'framer-motion';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -13,12 +16,8 @@ import { DateTimeConstant } from '~/constants/DateTimeConstant';
 import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
 import useLocalStorage from '~/hooks/useLocalStorage';
 import Container from '~/layouts/Container';
-import PageContainer from '~/layouts/PageContainer';
-import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
-import { SettingTwoTone } from '@ant-design/icons';
-import { motion } from 'framer-motion';
 import { DateTime } from '~/types/date-time';
-import clsx from 'clsx';
+import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
 
 dayjs.extend(customParseFormat);
 
@@ -157,63 +156,61 @@ const HomePage: React.FC<Props> = props => {
 
     if (!domLoaded) return <></>;
     return (
-        <PageContainer>
-            <Container className="flex items-center justify-center">
-                <div className={clsx('w-full h-full grid gap-4 grid-cols-12')}>
-                    <Box
-                        header={{
-                            title: 'Remaining To Lunch Time',
-                            subTitle: 'Thời gian còn lại đến giờ Nghỉ trưa',
+        <Container className="flex items-center justify-center">
+            <div className={clsx('w-full h-full grid gap-4 grid-cols-12')}>
+                <Box
+                    header={{
+                        title: 'Remaining To Lunch Time',
+                        subTitle: 'Thời gian còn lại đến giờ Nghỉ trưa',
+                    }}
+                    className="flex items-center justify-center h-[220px]"
+                    wrapperClassName="lg:col-span-4 sm:col-span-12"
+                >
+                    <CircleProgressClock
+                        time={state.remainingToLunchTime}
+                        total={calculateRemainingTime(
+                            formatTime(timerSetting.checkingTime),
+                            formatTime(timerSetting.lunchTime.startTime),
+                        )}
+                    />
+                </Box>
+                <Box
+                    header={{
+                        title: 'Worked Duration',
+                        subTitle: 'Thời gian Đã làm việc',
+                    }}
+                    className="flex items-center justify-center h-[220px]"
+                    wrapperClassName="lg:col-span-8 sm:col-span-12"
+                >
+                    <DigitalClock time={state.workedDuration} className="text-[#00B8D9]" />
+                </Box>
+                <Box
+                    header={{
+                        title: 'Remaining To Checkout Time',
+                        subTitle: 'Thời gian còn lại đến giờ Checkout',
+                    }}
+                    className="flex items-center justify-center h-[220px]"
+                    wrapperClassName="lg:col-span-4 sm:col-span-12"
+                >
+                    <CircleProgressClock
+                        time={state.remainingToCheckoutTime}
+                        total={{
+                            hour: 0,
+                            minute: timerSetting.workingHours * 60,
                         }}
-                        className="flex items-center justify-center h-[220px]"
-                        wrapperClassName="lg:col-span-4 sm:col-span-12"
-                    >
-                        <CircleProgressClock
-                            time={state.remainingToLunchTime}
-                            total={calculateRemainingTime(
-                                formatTime(timerSetting.checkingTime),
-                                formatTime(timerSetting.lunchTime.startTime),
-                            )}
-                        />
-                    </Box>
-                    <Box
-                        header={{
-                            title: 'Worked Duration',
-                            subTitle: 'Thời gian Đã làm việc',
-                        }}
-                        className="flex items-center justify-center h-[220px]"
-                        wrapperClassName="lg:col-span-8 sm:col-span-12"
-                    >
-                        <DigitalClock time={state.workedDuration} className="text-[#00B8D9]" />
-                    </Box>
-                    <Box
-                        header={{
-                            title: 'Remaining To Checkout Time',
-                            subTitle: 'Thời gian còn lại đến giờ Checkout',
-                        }}
-                        className="flex items-center justify-center h-[220px]"
-                        wrapperClassName="lg:col-span-4 sm:col-span-12"
-                    >
-                        <CircleProgressClock
-                            time={state.remainingToCheckoutTime}
-                            total={{
-                                hour: 0,
-                                minute: timerSetting.workingHours * 60,
-                            }}
-                        />
-                    </Box>
-                    <Box
-                        header={{
-                            title: 'Checkout Time',
-                            subTitle: 'Có thể checkout khi đến thời gian này',
-                        }}
-                        className="flex items-center justify-center h-[220px]"
-                        wrapperClassName="lg:col-span-8 sm:col-span-12"
-                    >
-                        <DigitalClock time={state.checkoutTime} className="text-[#FF5630]" />
-                    </Box>
-                </div>
-            </Container>
+                    />
+                </Box>
+                <Box
+                    header={{
+                        title: 'Checkout Time',
+                        subTitle: 'Có thể checkout khi đến thời gian này',
+                    }}
+                    className="flex items-center justify-center h-[220px]"
+                    wrapperClassName="lg:col-span-8 sm:col-span-12"
+                >
+                    <DigitalClock time={state.checkoutTime} className="text-[#FF5630]" />
+                </Box>
+            </div>
             <FloatButton
                 href="/timer-setting"
                 tooltip={<div>Setting</div>}
@@ -229,7 +226,7 @@ const HomePage: React.FC<Props> = props => {
                     </motion.div>
                 }
             />
-        </PageContainer>
+        </Container>
     );
 };
 

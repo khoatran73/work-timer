@@ -1,15 +1,19 @@
-import React, { PropsWithChildren } from 'react';
 import clsx from 'clsx';
+import React, { PropsWithChildren } from 'react';
 
 interface Props extends PropsWithChildren {
     className?: string;
-    wrapperClassName?: string;
 }
 
-const Container: React.FC<Props> = ({ children, wrapperClassName, className }) => {
+const Container: React.FC<Props> = ({ children, className }) => {
     return (
-        <div className={clsx('w-full h-full flex items-center justify-center', wrapperClassName)}>
-            <div className={clsx('w-[1200px] px-4', className)}>{children}</div>
+        <div
+            className={clsx(
+                'w-full h-full overflow-x-hidden overflow-y-auto',
+                className,
+            )}
+        >
+            {children}
         </div>
     );
 };

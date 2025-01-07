@@ -1,12 +1,16 @@
+@import url('reset.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-    --background: #ffffff;
+    --background: #fafafa;
     --text-main: #1c252e;
     --text-secondary: #637381;
     --text-active: #00a76f;
+    --menu-active: #00a76f;
+    --menu: #bfbfbf;
 }
 
 body {

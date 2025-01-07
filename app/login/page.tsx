@@ -4,11 +4,10 @@ import Link from 'next/link';
 import { FcGoogle } from 'react-icons/fc';
 import { ButtonBase } from '~/components/ButtonBase';
 import Container from '~/layouts/Container';
-import PageContainer from '~/layouts/PageContainer';
 
 const LoginPage: React.FC = () => {
     return (
-        <PageContainer>
+        <>
             <Container className="flex items-center justify-center">
                 <div className="w-[400px] rounded-xl p-4 bg-white shadow">
                     <div className="mb-6">
@@ -56,7 +55,7 @@ const LoginPage: React.FC = () => {
                     </div>
                 </div>
             </Container>
-        </PageContainer>
+        </>
     );
 };
 
