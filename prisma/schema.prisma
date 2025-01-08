@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mongodb"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model TimerSetting {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  workingHours       Int
+  startWorkingTimeId String   @unique @db.ObjectId
+  startWorkingTime   Timer?   @relation("StartWorkingTime", fields: [startWorkingTimeId], references: [id])
+  lunchTimeId        String   @unique @db.ObjectId
+  lunchTime          Timer?   @relation("LunchTime", fields: [lunchTimeId], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Timer {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  start String
+  end   String
+
+  timerSettingStart TimerSetting? @relation("StartWorkingTime")
+  timerSettingLunch TimerSetting? @relation("LunchTime")
+}
+
+model CheckingTime {
+  id   String   @id @default(auto()) @map("_id") @db.ObjectId
+  time String
+  // todo: user...
+  date DateTime
+}
