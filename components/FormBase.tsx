@@ -1,4 +1,4 @@
-import { Form, FormInstance } from 'antd';
+import { ColProps, Form, FormInstance } from 'antd';
 import { FormItemInputProps } from 'antd/es/form/FormItemInput';
 import { FormItemLabelProps } from 'antd/es/form/FormItemLabel';
 import { NamePath } from 'antd/lib/form/interface';
@@ -8,7 +8,8 @@ import React, { useImperativeHandle, useRef } from 'react';
 
 export interface FormBaseProps {
     initialValues?: Record<string, any>;
-    labelCol?: number;
+    labelCol?: ColProps;
+    wrapperCol?: ColProps;
     layout?: 'horizontal' | 'inline' | 'vertical';
     labelAlign?: 'left' | 'right';
     disabled?: boolean;
@@ -66,8 +67,8 @@ const FormBase = React.forwardRef<FormBaseRef, FormBaseProps>((props, ref) => {
     return (
         <div className={clsx('w-full h-full base-form', props.className)}>
             <Form
-                labelCol={{ span: props.labelCol ?? 6 }}
-                wrapperCol={{ span: 24 - Number(props.labelCol ?? 6) }}
+                labelCol={props.labelCol}
+                wrapperCol={props.wrapperCol}
                 initialValues={props.initialValues}
                 autoComplete="off"
                 ref={formRef}

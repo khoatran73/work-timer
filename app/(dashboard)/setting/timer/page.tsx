@@ -1,10 +1,8 @@
 'use client';
 
-import { HomeTwoTone } from '@ant-design/icons';
-import { Button, FloatButton, Input, TimePicker } from 'antd';
+import { Button, Input, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { motion } from 'framer-motion';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
@@ -133,7 +131,6 @@ const TimerSettingPage: React.FC<Props> = props => {
                         },
                     ]}
                     layout="vertical"
-                    labelCol={12}
                     className={'w-full flex items-center justify-center flex-col'}
                     width={'100%'}
                     renderBtnBottom={() => {
@@ -142,31 +139,11 @@ const TimerSettingPage: React.FC<Props> = props => {
                                 <Button type="primary" onClick={() => handleSave()}>
                                     Save Setting
                                 </Button>
-                                {/* <Button type="default" onClick={() => handleReset()}>
-                                        Reset
-                                    </Button> */}
                             </div>
                         );
                     }}
                 />
             </div>
-            {!_.isEqual(timerSetting, DEFAULT_TIMER_SETTING) && (
-                <FloatButton
-                    href="/"
-                    tooltip={<div>Home</div>}
-                    type="default"
-                    shape="circle"
-                    icon={
-                        <motion.div
-                            initial={{ '--scale': 0.8 }}
-                            animate={{ '--scale': 1.2 }}
-                            transition={{ duration: 1, repeat: Infinity, delay: 0, ease: 'easeInOut' }}
-                        >
-                            <HomeTwoTone style={{ transform: 'scale(var(--scale))' }} twoToneColor="#637381" />
-                        </motion.div>
-                    }
-                />
-            )}
         </Container>
     );
 };
