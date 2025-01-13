@@ -14,15 +14,55 @@ datasource db {
   relationMode = "prisma"
 }
 
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  image          String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  isAdmin        Boolean   @default(false)
+  isLocked       Boolean   @default(false)
+  lockedAt       DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  account Account? @relation
+  timerSetting TimerSetting? @relation
+  checkingTime CheckingTime? @relation
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
+}
+
 model TimerSetting {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
   workingHours       Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  userId String @unique @db.ObjectId
+  user User? @relation(fields: [userId], references: [id])
   startWorkingTimeId String   @unique @db.ObjectId
   startWorkingTime   Timer?   @relation("StartWorkingTime", fields: [startWorkingTimeId], references: [id])
   lunchTimeId        String   @unique @db.ObjectId
   lunchTime          Timer?   @relation("LunchTime", fields: [lunchTimeId], references: [id])
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
 }
 
 model Timer {
@@ -37,6 +77,8 @@ model Timer {
 model CheckingTime {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
   time String
-  // todo: user...
   date DateTime
+
+  userId String @unique @db.ObjectId
+  user User? @relation(fields: [userId], references: [id])
 }
