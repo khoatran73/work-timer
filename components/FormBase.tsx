@@ -96,4 +96,5 @@ const FormBase = React.forwardRef<FormBaseRef, FormBaseProps>((props, ref) => {
     );
 });
 
+FormBase.displayName = 'FormBase';
 export default FormBase;
