@@ -1,4 +1,5 @@
 import { notification } from 'antd';
+import * as React from 'react';
 
 export default class NotifyUtil {
     static success(message: string, description: string) {

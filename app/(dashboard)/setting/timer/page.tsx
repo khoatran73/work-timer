@@ -8,15 +8,16 @@ import { motion } from 'framer-motion';
 import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import Box from '~/components/Box';
 import FormBase, { FormBaseRef } from '~/components/FormBase';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
 import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
 import { NotificationConstant } from '~/constants/NotificationConstant';
 import useLocalStorage from '~/hooks/useLocalStorage';
 import Container from '~/layouts/Container';
+import requestApi from '~/lib/requestApi';
 import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
 import { nameof } from '~/utils/nameof';
+import NotifyUtil from '~/utils/NotifyUtil';
 
 dayjs.extend(customParseFormat);
 
@@ -47,6 +48,24 @@ const TimerSettingPage: React.FC<Props> = props => {
             },
             workingHours: _.toNumber(params.workingHours),
         };
+
+        try {
+            const response = await requestApi('/api/timer-setting', 'post', {
+                ...setting,
+                startWorkingTime: {
+                    start: setting.startWorkingTime,
+                    end: setting.startWorkingTime,
+                },
+                lunchTime: {
+                    start: setting.lunchTime.startTime,
+                    end: setting.lunchTime.endTime,
+                },
+            });
+            console.log(response);
+        } catch (err) {
+            console.log('err: ', err);
+            NotifyUtil.error(NotificationConstant.TITLE, NotificationConstant.SOME_THING_WENT_WRONG);
+        }
 
         setTimerSetting(setting);
 
