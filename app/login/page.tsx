@@ -3,7 +3,7 @@
 import { Button, Divider, Input } from 'antd';
 import { signIn, useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import Box from '~/components/Box';
 import FormBase from '~/components/FormBase';
@@ -11,13 +11,15 @@ import { NotificationConstant } from '~/constants/NotificationConstant';
 import Container from '~/layouts/Container';
 
 const LoginPage: React.FC = () => {
-    const { data: session } = useSession();
+    const { data: session ,status} = useSession();
 
     useEffect(() => {
+        if (status === 'loading') return;
+
         if (session) {
             redirect('/');
         }
-    }, [session]);
+    }, [session,status]);
 
     const login = (type: 'normal' | 'google') => {
         if (type === 'normal') {
@@ -28,8 +30,7 @@ const LoginPage: React.FC = () => {
         signIn('google');
     };
 
-    if (session) return null;
-
+    if (status === 'loading') return null;
     return (
         <div className="w-screen h-screen" style={{ background: 'var(--background)' }}>
             <Container>
