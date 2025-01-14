@@ -1,24 +1,23 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import _ from 'lodash';
 import { redirect } from 'next/navigation';
 import React, { useEffect } from 'react';
+import useCurrentUser from '~/store/useCurrentUser';
 
 interface Props extends React.PropsWithChildren {}
 
 const AuthProvider: React.FC<Props> = ({ children }) => {
-    const { data: session, status } = useSession();
+    const { user, loading } = useCurrentUser();
 
     useEffect(() => {
-        if (status === 'loading') return;
-
-        if (!session) {
+        if (loading) return;
+        if (_.isEmpty(user)) {
             redirect('/login');
         }
-    }, [session, status]);
+    }, [loading]);
 
-    if (status === 'loading') return null;
-
+    if (loading) return null;
     return <>{children}</>;
 };
 

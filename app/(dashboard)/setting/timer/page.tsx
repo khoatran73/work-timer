@@ -64,6 +64,7 @@ const TimerSettingPage: React.FC<Props> = props => {
                     initialValues={
                         timerSetting
                             ? {
+                                  workingHours: timerSetting?.workingHours,
                                   lunchTime: [
                                       dayjs(timerSetting?.lunchTime.start, DateTimeConstant.HH_MM),
                                       dayjs(timerSetting?.lunchTime.end, DateTimeConstant.HH_MM),
@@ -81,7 +82,6 @@ const TimerSettingPage: React.FC<Props> = props => {
                             children: <Input type="number" placeholder="Working hours" className="w-16" />,
                             rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
                             label: 'Working Hours',
-                            initialValue: timerSetting?.workingHours
                         },
                         {
                             name: nameof<TimerSettingDto>(x => x.startWorkingTime),

@@ -12,6 +12,10 @@ dayjs.extend(customParseFormat);
 export async function GET(req: NextRequest) {
     try {
         const { currentUser } = await serverAuth();
+        if (!currentUser) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: ApiStatus.UNAUTHORIZED });
+        }
+
         const timerSetting = await prismadb.timerSetting.findUnique({
             where: {
                 userId: currentUser.id,
@@ -25,7 +29,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(timerSetting, { status: ApiStatus.SUCCESS });
     } catch (error) {
-        return NextResponse.json({ error: error }, { status: ApiStatus.BAD_REQUEST });
+        console.error('GET: /api/timer-setting', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: ApiStatus.SERVER_ERROR });
     }
 }
 
@@ -43,6 +48,11 @@ const calcEndWorkingTime = (timeStr: string, workingHours: number, lunchDuration
 
 export async function POST(req: NextRequest) {
     try {
+        const { currentUser } = await serverAuth();
+        if (!currentUser) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: ApiStatus.UNAUTHORIZED });
+        }
+
         const body = await req.json();
         const { workingHours, startWorkingTime, lunchTime } = body;
 
@@ -79,7 +89,6 @@ export async function POST(req: NextRequest) {
             duration: upsertInput.startWorkingTime.duration,
         };
 
-        const { currentUser } = await serverAuth();
 
         let timerSetting = await prismadb.timerSetting.findUnique({
             where: {
@@ -143,6 +152,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(timerSetting, { status: ApiStatus.SUCCESS });
     } catch (error) {
-        return NextResponse.json({ error: error }, { status: ApiStatus.BAD_REQUEST });
+        console.error('POST: /api/timer-setting', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: ApiStatus.SERVER_ERROR });
     }
 }

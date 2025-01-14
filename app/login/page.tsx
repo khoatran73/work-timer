@@ -1,25 +1,27 @@
 'use client';
 
 import { Button, Divider, Input } from 'antd';
-import { signIn, useSession } from 'next-auth/react';
+import _ from 'lodash';
+import { signIn } from 'next-auth/react';
 import { redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import Box from '~/components/Box';
 import FormBase from '~/components/FormBase';
 import { NotificationConstant } from '~/constants/NotificationConstant';
 import Container from '~/layouts/Container';
+import useCurrentUser from '~/store/useCurrentUser';
 
 const LoginPage: React.FC = () => {
-    const { data: session ,status} = useSession();
+    const { user, loading } = useCurrentUser();
 
     useEffect(() => {
-        if (status === 'loading') return;
+        if (loading) return;
 
-        if (session) {
+        if (!_.isEmpty(user)) {
             redirect('/');
         }
-    }, [session,status]);
+    }, [loading]);
 
     const login = (type: 'normal' | 'google') => {
         if (type === 'normal') {
@@ -30,7 +32,7 @@ const LoginPage: React.FC = () => {
         signIn('google');
     };
 
-    if (status === 'loading') return null;
+    if (loading) return null;
     return (
         <div className="w-screen h-screen" style={{ background: 'var(--background)' }}>
             <Container>

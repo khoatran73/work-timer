@@ -2,8 +2,8 @@
 
 import '@ant-design/v5-patch-for-react-19';
 import clsx from 'clsx';
-import { SessionProvider } from 'next-auth/react';
 import { Public_Sans } from 'next/font/google';
+import ZustandProvider from '~/context/ZustandProvider';
 import './globals.css';
 
 const publicSans = Public_Sans({
@@ -19,7 +19,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className={clsx(publicSans.variable, publicSans.className, 'antialiased')}>
-                <SessionProvider>{children}</SessionProvider>
+                <ZustandProvider>{children}</ZustandProvider>
             </body>
         </html>
     );
