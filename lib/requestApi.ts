@@ -1,23 +1,29 @@
-import axios, { AxiosRequestConfig } from 'axios';
-import { AxiosResponse } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
-const requestApi = async <TData extends Record<string, any>, TResponse>(
+const requestApi = async <TRequest extends Record<string, any>, TResponse>(
     url: string,
     method: 'get' | 'post' | 'put' | 'delete',
-    data: TData,
-    config?: AxiosRequestConfig<TData>,
+    data?: TRequest,
+    config?: AxiosRequestConfig<TRequest>,
 ): Promise<AxiosResponse<TResponse>> => {
     switch (method) {
         case 'get':
-            return await axios.get(url, config).then(res => res.data);
+            return await axios.get(url, {
+                ...config,
+                params: data,
+            });
+
         case 'post':
-            return await axios.post(url, data, config).then(res => res.data);
+            return await axios.post(url, data, config);
         case 'put':
-            return await axios.put(url, data, config).then(res => res.data);
+            return await axios.put(url, data, config);
         case 'delete':
-            return await axios.delete(url, config).then(res => res.data);
+            return await axios.delete(url, config);
         default:
-            return await axios.get(url, config).then(res => res.data);
+            return await axios.get(url, {
+                ...config,
+                params: data,
+            });
     }
 };
 

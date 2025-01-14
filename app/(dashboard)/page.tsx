@@ -6,18 +6,16 @@ import clsx from 'clsx';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { motion } from 'framer-motion';
-import _ from 'lodash';
-import { redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Box from '~/components/Box';
 import CircleProgressClock from '~/components/CircleProgressClock';
 import DigitalClock from '~/components/DigitalClock';
+import Loading from '~/components/Loading';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
-import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
-import useLocalStorage from '~/hooks/useLocalStorage';
+import useDetail from '~/hooks/useDetail';
 import Container from '~/layouts/Container';
 import { DateTime } from '~/types/date-time';
-import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
+import { TimerSettingDto } from '~/types/timer-setting';
 
 dayjs.extend(customParseFormat);
 
@@ -39,11 +37,8 @@ const ONE_MINUTE_TO_MS = 60000;
 const ONE_SECOND_TO_MS = 1000;
 
 const HomePage: React.FC<Props> = props => {
-    const [timerSetting, setTimerSetting] = useLocalStorage<TimerSetting>(
-        LocalStorageConstant.TIMER_SETTING,
-        DEFAULT_TIMER_SETTING,
-    );
-    const [domLoaded, setDomLoaded] = useState(false);
+    const { isInitialLoading, entity: timerSetting } = useDetail<TimerSettingDto>('/api/timer-setting');
+
     const [state, setState] = useState<State>({
         remainingToLunchTime: {
             hour: 0,
@@ -64,15 +59,10 @@ const HomePage: React.FC<Props> = props => {
     });
 
     useEffect(() => {
-        setDomLoaded(true);
-    }, []);
+        calcTime(dayjs());
+    }, [timerSetting]);
 
     useEffect(() => {
-        if (_.isEqual(timerSetting, DEFAULT_TIMER_SETTING)) {
-            redirect('/timer-setting');
-            return;
-        }
-
         const interval = setInterval(() => {
             calcTime(dayjs());
         }, ONE_SECOND_TO_MS);
@@ -80,23 +70,23 @@ const HomePage: React.FC<Props> = props => {
         return () => clearInterval(interval);
     }, []);
 
-    useEffect(() => {
-        const checkReset = () => {
-            const now = new Date();
-            // Reset Checking Time at 00:01 every day
-            if (now.getHours() === 11 && now.getMinutes() === 3) {
-                setTimerSetting(setting => ({
-                    ...setting,
-                    checkingTime: '00:00',
-                }));
-                redirect('/timer-setting');
-            }
-        };
+    // useEffect(() => {
+    //     const checkReset = () => {
+    //         const now = new Date();
+    //         // Reset Checking Time at 00:01 every day
+    //         if (now.getHours() === 11 && now.getMinutes() === 3) {
+    //             setTimerSetting(setting => ({
+    //                 ...setting,
+    //                 checkingTime: '00:00',
+    //             }));
+    //             redirect('/timer-setting');
+    //         }
+    //     };
 
-        const interval = setInterval(checkReset, ONE_MINUTE_TO_MS);
+    //     const interval = setInterval(checkReset, ONE_MINUTE_TO_MS);
 
-        return () => clearInterval(interval);
-    }, []);
+    //     return () => clearInterval(interval);
+    // }, []);
 
     const calculateRemainingTime = (current: dayjs.Dayjs, target: dayjs.Dayjs) => {
         const remainingMinutes = target.diff(current, 'm');
@@ -124,21 +114,23 @@ const HomePage: React.FC<Props> = props => {
     const formatTime = (time: DateTime) => dayjs(time, DateTimeConstant.HH_MM);
 
     const calcTime = (now: dayjs.Dayjs) => {
-        const checkingTime = formatTime(timerSetting.checkingTime).isAfter(formatTime(timerSetting.startWorkingTime))
-            ? formatTime(timerSetting.checkingTime)
-            : formatTime(timerSetting.startWorkingTime);
+        if (!timerSetting) return;
+
+        const checkingTime = formatTime('08:26').isAfter(formatTime(timerSetting.startWorkingTime.start))
+            ? formatTime('08:26')
+            : formatTime(timerSetting.startWorkingTime.start);
 
         const lunchTime = {
-            start: formatTime(timerSetting.lunchTime.startTime),
-            end: formatTime(timerSetting.lunchTime.endTime),
+            start: formatTime(timerSetting.lunchTime.start),
+            end: formatTime(timerSetting.lunchTime.end),
+            duration: timerSetting.lunchTime.duration,
         };
 
-        const lunchDuration = lunchTime.end.diff(lunchTime.start, 'm');
         const toLunch = calculateRemainingTime(now, lunchTime.start);
-        const checkoutTime = checkingTime.add(timerSetting.workingHours, 'hour').add(lunchDuration, 'm');
+        const checkoutTime = checkingTime.add(timerSetting.workingHours, 'hour').add(lunchTime.duration, 'm');
         const toCheckout = calculateRemainingTime(now, checkoutTime);
 
-        const workedDuration = calculateWorkedDuration(now, checkingTime, lunchTime, lunchDuration);
+        const workedDuration = calculateWorkedDuration(now, checkingTime, lunchTime, lunchTime.duration);
 
         setState({
             remainingToLunchTime: toLunch,
@@ -154,7 +146,8 @@ const HomePage: React.FC<Props> = props => {
         });
     };
 
-    if (!domLoaded) return <></>;
+    if (isInitialLoading) return <Loading />;
+    if (!timerSetting) return <></>;
     return (
         <Container className="flex items-center justify-center">
             <div className={clsx('w-full h-full grid gap-4 grid-cols-12')}>
@@ -168,10 +161,7 @@ const HomePage: React.FC<Props> = props => {
                 >
                     <CircleProgressClock
                         time={state.remainingToLunchTime}
-                        total={calculateRemainingTime(
-                            formatTime(timerSetting.checkingTime),
-                            formatTime(timerSetting.lunchTime.startTime),
-                        )}
+                        total={calculateRemainingTime(formatTime('08:26'), formatTime(timerSetting.lunchTime.start))}
                     />
                 </Box>
                 <Box

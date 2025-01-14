@@ -27,6 +27,7 @@
         "tailwind-merge": "2.5.5"
     },
     "devDependencies": {
+        "@ant-design/v5-patch-for-react-19": "1.0.3",
         "@eslint/eslintrc": "3",
         "@next-auth/prisma-adapter": "1.0.7",
         "@types/bcrypt": "5.0.2",

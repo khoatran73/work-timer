@@ -1,23 +1,21 @@
-import { DateTime } from './date-time';
+import { Identity, IdentityUpsert } from './identity';
+import { TimerDto, TimerUpsertDto } from './timer';
 
-export interface TimerSetting {
-    checkingTime: DateTime;
-    startWorkingTime: DateTime;
-    lunchTime: TimeRange;
+export interface TimerSettingDto extends Identity {
     workingHours: number;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: string;
+    startWorkingTimeId: string;
+    endWorkingTimeId: string;
+    lunchTimeId: string;
+
+    startWorkingTime: TimerDto;
+    endWorkingTime: TimerDto;
+    lunchTime: TimerDto;
 }
 
-export interface TimeRange {
-    startTime: DateTime;
-    endTime: DateTime;
+export interface TimerSettingUpsertDto extends Pick<TimerSettingDto, 'workingHours'>, IdentityUpsert {
+    startWorkingTime: TimerUpsertDto;
+    lunchTime: TimerUpsertDto;
 }
-
-export const DEFAULT_TIMER_SETTING: TimerSetting = {
-    checkingTime: '00:00',
-    startWorkingTime: '00:00',
-    lunchTime: {
-        startTime: '00:00',
-        endTime: '00:00',
-    },
-    workingHours: 0,
-};

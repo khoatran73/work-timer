@@ -5,9 +5,8 @@ type MenuItem = Required<MenuProps>['items'][number];
 
 export type DashboardMenuItem = MenuItem & {
     // permission: string;
-path: string;
-children?: DashboardMenuItem[];
-
+    path: string;
+    children?: DashboardMenuItem[];
 };
 
 // name: string;

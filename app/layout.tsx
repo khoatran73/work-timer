@@ -1,5 +1,6 @@
 'use client';
 
+import '@ant-design/v5-patch-for-react-19';
 import clsx from 'clsx';
 import { SessionProvider } from 'next-auth/react';
 import { Public_Sans } from 'next/font/google';

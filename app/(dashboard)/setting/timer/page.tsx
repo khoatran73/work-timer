@@ -4,16 +4,15 @@ import { Button, Input, TimePicker } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import _ from 'lodash';
-import { redirect } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import FormBase, { FormBaseRef } from '~/components/FormBase';
+import Loading from '~/components/Loading';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
-import { LocalStorageConstant } from '~/constants/LocalStorageConstant';
 import { NotificationConstant } from '~/constants/NotificationConstant';
-import useLocalStorage from '~/hooks/useLocalStorage';
+import useDetail from '~/hooks/useDetail';
 import Container from '~/layouts/Container';
 import requestApi from '~/lib/requestApi';
-import { DEFAULT_TIMER_SETTING, TimerSetting } from '~/types/timer-setting';
+import { TimerSettingDto, TimerSettingUpsertDto } from '~/types/timer-setting';
 import { nameof } from '~/utils/nameof';
 import NotifyUtil from '~/utils/NotifyUtil';
 
@@ -23,11 +22,7 @@ interface Props {}
 
 const TimerSettingPage: React.FC<Props> = props => {
     const formRef = useRef<FormBaseRef>(null);
-    const [timerSetting, setTimerSetting] = useLocalStorage<TimerSetting>(
-        LocalStorageConstant.TIMER_SETTING,
-        DEFAULT_TIMER_SETTING,
-    );
-    const [domLoaded, setDomLoaded] = useState(false);
+    const { isInitialLoading, entity: timerSetting, refetch } = useDetail<TimerSettingDto>('/api/timer-setting');
 
     const handleSave = async () => {
         const isValidForm = await formRef.current?.isFieldsValidate();
@@ -37,88 +32,71 @@ const TimerSettingPage: React.FC<Props> = props => {
         const params = formRef.current?.getFieldsValue();
         if (_.isEmpty(params)) return;
 
-        const setting: TimerSetting = {
-            checkingTime: params.checkingTime.format(DateTimeConstant.HH_MM),
-            startWorkingTime: params.startWorkingTime.format(DateTimeConstant.HH_MM),
+        const setting: TimerSettingUpsertDto = {
+            startWorkingTime: {
+                start: params.startWorkingTime[0].format(DateTimeConstant.HH_MM),
+                end: params.startWorkingTime[1].format(DateTimeConstant.HH_MM),
+            },
             lunchTime: {
-                startTime: params.lunchTime[0].format(DateTimeConstant.HH_MM),
-                endTime: params.lunchTime[1].format(DateTimeConstant.HH_MM),
+                start: params.lunchTime[0].format(DateTimeConstant.HH_MM),
+                end: params.lunchTime[1].format(DateTimeConstant.HH_MM),
             },
             workingHours: _.toNumber(params.workingHours),
         };
 
         try {
-            const response = await requestApi('/api/timer-setting', 'post', {
-                ...setting,
-                startWorkingTime: {
-                    start: setting.startWorkingTime,
-                    end: setting.startWorkingTime,
-                },
-                lunchTime: {
-                    start: setting.lunchTime.startTime,
-                    end: setting.lunchTime.endTime,
-                },
-            });
-            console.log(response);
+            await requestApi<TimerSettingUpsertDto, TimerSettingDto>('/api/timer-setting', 'post', setting);
+            await refetch();
+            NotifyUtil.success(NotificationConstant.TITLE, NotificationConstant.SAVE_SUCCESS);
         } catch (err) {
             console.log('err: ', err);
             NotifyUtil.error(NotificationConstant.TITLE, NotificationConstant.SOME_THING_WENT_WRONG);
         }
-
-        setTimerSetting(setting);
-
-        redirect('/');
     };
 
-    useEffect(() => {
-        setDomLoaded(true);
-    }, []);
-
-    if (!domLoaded) return <></>;
+    if (isInitialLoading) return <Loading />;
     return (
         <Container>
             <div className="w-80">
                 <h1 className="mb-6">Timer Setting</h1>
                 <FormBase
                     ref={formRef}
-                    initialValues={{
-                        checkingTime: dayjs(timerSetting.checkingTime, DateTimeConstant.HH_MM),
-                        startWorkingTime: dayjs(timerSetting.startWorkingTime, DateTimeConstant.HH_MM),
-                        workingHours: timerSetting.workingHours,
-                        lunchTime: [
-                            dayjs(timerSetting.lunchTime.startTime, DateTimeConstant.HH_MM),
-                            dayjs(timerSetting.lunchTime.endTime, DateTimeConstant.HH_MM),
-                        ],
-                    }}
+                    initialValues={
+                        timerSetting
+                            ? {
+                                  workingHours: timerSetting?.workingHours,
+                                  lunchTime: [
+                                      dayjs(timerSetting?.lunchTime.start, DateTimeConstant.HH_MM),
+                                      dayjs(timerSetting?.lunchTime.end, DateTimeConstant.HH_MM),
+                                  ],
+                                  startWorkingTime: [
+                                      dayjs(timerSetting?.startWorkingTime.start, DateTimeConstant.HH_MM),
+                                      dayjs(timerSetting?.startWorkingTime.end, DateTimeConstant.HH_MM),
+                                  ],
+                              }
+                            : undefined
+                    }
                     formBaseItems={[
                         {
-                            name: nameof.full<TimerSetting>(x => x.checkingTime),
-                            children: (
-                                <TimePicker type="time" placeholder="Checking Time" format={DateTimeConstant.HH_MM} />
-                            ),
+                            name: nameof.full<TimerSettingDto>(x => x.workingHours),
+                            children: <Input type="number" placeholder="Working hours" className="w-16" />,
                             rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
-                            label: 'Checking Time',
+                            label: 'Working Hours',
                         },
                         {
-                            name: nameof.full<TimerSetting>(x => x.startWorkingTime),
+                            name: nameof<TimerSettingDto>(x => x.startWorkingTime),
                             children: (
-                                <TimePicker
+                                <TimePicker.RangePicker
                                     type="time"
-                                    placeholder="Start Working Time"
                                     format={DateTimeConstant.HH_MM}
+                                    placeholder={['Start working time start', 'Start working time end']}
                                 />
                             ),
                             rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
                             label: 'Start Working Time',
                         },
                         {
-                            name: nameof.full<TimerSetting>(x => x.workingHours),
-                            children: <Input type="number" placeholder="Working hours" className="w-16" />,
-                            rules: [{ required: true, message: NotificationConstant.NOT_EMPTY }],
-                            label: 'Working Hours',
-                        },
-                        {
-                            name: nameof<TimerSetting>(x => x.lunchTime),
+                            name: nameof<TimerSettingDto>(x => x.lunchTime),
                             children: (
                                 <TimePicker.RangePicker
                                     type="time"

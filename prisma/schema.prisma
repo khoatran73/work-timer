@@ -27,9 +27,9 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  account Account? @relation
+  account      Account?      @relation
   timerSetting TimerSetting? @relation
-  checkingTime CheckingTime? @relation
+  workingTime WorkingTime? @relation
 }
 
 model Account {
@@ -52,33 +52,38 @@ model Account {
 }
 
 model TimerSetting {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  workingHours       Int
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  workingHours Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  userId String @unique @db.ObjectId
-  user User? @relation(fields: [userId], references: [id])
-  startWorkingTimeId String   @unique @db.ObjectId
-  startWorkingTime   Timer?   @relation("StartWorkingTime", fields: [startWorkingTimeId], references: [id])
-  lunchTimeId        String   @unique @db.ObjectId
-  lunchTime          Timer?   @relation("LunchTime", fields: [lunchTimeId], references: [id])
+  userId             String @unique @db.ObjectId
+  user               User?  @relation(fields: [userId], references: [id])
+  startWorkingTimeId String @unique @db.ObjectId
+  startWorkingTime   Timer? @relation("StartWorkingTime", fields: [startWorkingTimeId], references: [id])
+  endWorkingTimeId   String @unique @db.ObjectId
+  endWorkingTime     Timer? @relation("EndWorkingTime", fields: [endWorkingTimeId], references: [id])
+  lunchTimeId        String @unique @db.ObjectId
+  lunchTime          Timer? @relation("LunchTime", fields: [lunchTimeId], references: [id])
 }
 
 model Timer {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
-  start String
-  end   String
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  start    String
+  end      String
+  duration Int
 
-  timerSettingStart TimerSetting? @relation("StartWorkingTime")
-  timerSettingLunch TimerSetting? @relation("LunchTime")
+  startWorkingTime TimerSetting? @relation("StartWorkingTime")
+  endWorkingTime   TimerSetting? @relation("EndWorkingTime")
+  lunchTime        TimerSetting? @relation("LunchTime")
 }
 
-model CheckingTime {
+model WorkingTime {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
-  time String
+  checkingTime String
+  checkoutTime String
   date DateTime
 
   userId String @unique @db.ObjectId
-  user User? @relation(fields: [userId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
 }
