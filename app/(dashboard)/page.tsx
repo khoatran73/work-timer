@@ -10,12 +10,11 @@ import { useEffect, useState } from 'react';
 import Box from '~/components/Box';
 import CircleProgressClock from '~/components/CircleProgressClock';
 import DigitalClock from '~/components/DigitalClock';
-import Loading from '~/components/Loading';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
-import useDetail from '~/hooks/useDetail';
 import Container from '~/layouts/Container';
+import useTimerSetting from '~/store/useTimerSetting';
+import useWorkingTime from '~/store/useWorkingTime';
 import { DateTime } from '~/types/date-time';
-import { TimerSettingDto } from '~/types/timer-setting';
 
 dayjs.extend(customParseFormat);
 
@@ -25,7 +24,6 @@ interface State {
     remainingToLunchTime: TimeDisplay;
     remainingToCheckoutTime: TimeDisplay;
     workedDuration: TimeDisplay;
-    checkoutTime: TimeDisplay;
 }
 
 interface TimeDisplay {
@@ -35,32 +33,26 @@ interface TimeDisplay {
 
 const ONE_MINUTE_TO_MS = 60000;
 const ONE_SECOND_TO_MS = 1000;
+const ZERO_HOUR = '00:00';
+const DEFAULT_STATE: State = {
+    remainingToLunchTime: {
+        hour: 0,
+        minute: 0,
+    },
+    remainingToCheckoutTime: {
+        hour: 0,
+        minute: 0,
+    },
+    workedDuration: {
+        hour: 0,
+        minute: 0,
+    },
+};
 
 const HomePage: React.FC<Props> = props => {
-    const { isInitialLoading, entity: timerSetting } = useDetail<TimerSettingDto>('/api/timer-setting');
-
-    const [state, setState] = useState<State>({
-        remainingToLunchTime: {
-            hour: 0,
-            minute: 0,
-        },
-        remainingToCheckoutTime: {
-            hour: 0,
-            minute: 0,
-        },
-        workedDuration: {
-            hour: 0,
-            minute: 0,
-        },
-        checkoutTime: {
-            hour: 0,
-            minute: 0,
-        },
-    });
-
-    useEffect(() => {
-        calcTime(dayjs());
-    }, [timerSetting]);
+    const { timerSetting } = useTimerSetting();
+    const { workingTime, clearWorkingTime } = useWorkingTime();
+    const [state, setState] = useState<State>(DEFAULT_STATE);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -68,25 +60,19 @@ const HomePage: React.FC<Props> = props => {
         }, ONE_SECOND_TO_MS);
 
         return () => clearInterval(interval);
+    }, [timerSetting, workingTime]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date();
+            // Reset Working Time at 00:01 every day
+            if (now.getHours() === 10 && now.getMinutes() === 38) {
+                clearWorkingTime();
+            }
+        }, ONE_MINUTE_TO_MS);
+
+        return () => clearInterval(interval);
     }, []);
-
-    // useEffect(() => {
-    //     const checkReset = () => {
-    //         const now = new Date();
-    //         // Reset Checking Time at 00:01 every day
-    //         if (now.getHours() === 11 && now.getMinutes() === 3) {
-    //             setTimerSetting(setting => ({
-    //                 ...setting,
-    //                 checkingTime: '00:00',
-    //             }));
-    //             redirect('/timer-setting');
-    //         }
-    //     };
-
-    //     const interval = setInterval(checkReset, ONE_MINUTE_TO_MS);
-
-    //     return () => clearInterval(interval);
-    // }, []);
 
     const calculateRemainingTime = (current: dayjs.Dayjs, target: dayjs.Dayjs) => {
         const remainingMinutes = target.diff(current, 'm');
@@ -98,28 +84,30 @@ const HomePage: React.FC<Props> = props => {
 
     const calculateWorkedDuration = (
         now: dayjs.Dayjs,
-        checkingTime: dayjs.Dayjs,
-        lunchTime: { start: dayjs.Dayjs; end: dayjs.Dayjs },
-        lunchDuration: number,
+        checkInTime: dayjs.Dayjs,
+        lunchTime: { start: dayjs.Dayjs; end: dayjs.Dayjs; duration: number },
     ) => {
         if (now.isAfter(lunchTime.end)) {
-            return now.diff(checkingTime, 'm') - lunchDuration;
+            return now.diff(checkInTime, 'm') - lunchTime.duration;
         } else if (now.isBefore(lunchTime.start)) {
-            return now.diff(checkingTime, 'm');
+            return now.diff(checkInTime, 'm');
         } else {
-            return now.diff(checkingTime, 'm') - now.diff(lunchTime.start, 'm');
+            return now.diff(checkInTime, 'm') - now.diff(lunchTime.start, 'm');
         }
     };
 
     const formatTime = (time: DateTime) => dayjs(time, DateTimeConstant.HH_MM);
 
     const calcTime = (now: dayjs.Dayjs) => {
-        if (!timerSetting) return;
+        if (!timerSetting || !workingTime) {
+            setState(DEFAULT_STATE);
+            return;
+        }
 
-        const checkingTime = formatTime('08:26').isAfter(formatTime(timerSetting.startWorkingTime.start))
-            ? formatTime('08:26')
+        const checkInTime = formatTime(workingTime.checkInTime).isAfter(formatTime(timerSetting.startWorkingTime.start))
+            ? formatTime(workingTime.checkInTime)
             : formatTime(timerSetting.startWorkingTime.start);
-
+        const checkOutTime = formatTime(workingTime.checkOutTime);
         const lunchTime = {
             start: formatTime(timerSetting.lunchTime.start),
             end: formatTime(timerSetting.lunchTime.end),
@@ -127,10 +115,8 @@ const HomePage: React.FC<Props> = props => {
         };
 
         const toLunch = calculateRemainingTime(now, lunchTime.start);
-        const checkoutTime = checkingTime.add(timerSetting.workingHours, 'hour').add(lunchTime.duration, 'm');
-        const toCheckout = calculateRemainingTime(now, checkoutTime);
-
-        const workedDuration = calculateWorkedDuration(now, checkingTime, lunchTime, lunchTime.duration);
+        const toCheckout = calculateRemainingTime(now, checkOutTime);
+        const workedDuration = calculateWorkedDuration(now, checkInTime, lunchTime);
 
         setState({
             remainingToLunchTime: toLunch,
@@ -139,14 +125,9 @@ const HomePage: React.FC<Props> = props => {
                 hour: Math.floor(workedDuration / 60),
                 minute: workedDuration % 60,
             },
-            checkoutTime: {
-                hour: checkoutTime.hour(),
-                minute: checkoutTime.minute(),
-            },
         });
     };
 
-    if (isInitialLoading) return <Loading />;
     if (!timerSetting) return <></>;
     return (
         <Container className="flex items-center justify-center">
@@ -161,7 +142,10 @@ const HomePage: React.FC<Props> = props => {
                 >
                     <CircleProgressClock
                         time={state.remainingToLunchTime}
-                        total={calculateRemainingTime(formatTime('08:26'), formatTime(timerSetting.lunchTime.start))}
+                        total={calculateRemainingTime(
+                            formatTime(workingTime?.checkInTime || ZERO_HOUR),
+                            formatTime(timerSetting.lunchTime.start),
+                        )}
                     />
                 </Box>
                 <Box
@@ -198,7 +182,7 @@ const HomePage: React.FC<Props> = props => {
                     className="flex items-center justify-center h-[220px]"
                     wrapperClassName="lg:col-span-8 sm:col-span-12"
                 >
-                    <DigitalClock time={state.checkoutTime} className="text-[#FF5630]" />
+                    <DigitalClock time={workingTime?.checkOutTime || ZERO_HOUR} className="text-[#FF5630]" />
                 </Box>
             </div>
             <FloatButton

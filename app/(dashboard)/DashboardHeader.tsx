@@ -6,12 +6,18 @@ import { signOut } from 'next-auth/react';
 import React from 'react';
 import { MdOutlineLogout } from 'react-icons/md';
 import { DateTimeConstant } from '~/constants/DateTimeConstant';
+import { NotificationConstant } from '~/constants/NotificationConstant';
+import requestApi from '~/lib/requestApi';
 import useCurrentUser from '~/store/useCurrentUser';
+import useWorkingTime from '~/store/useWorkingTime';
+import { WorkingTimeDto, WorkingTimeUpsertDto } from '~/types/working-time';
+import NotifyUtil from '~/utils/NotifyUtil';
 
 interface Props {}
 
 const DashboardHeader: React.FC<Props> = props => {
     const { user } = useCurrentUser();
+    const { workingTime, setWorkingTime } = useWorkingTime();
 
     const renderAvatar = (size: number, padding: number) => {
         return (
@@ -30,18 +36,32 @@ const DashboardHeader: React.FC<Props> = props => {
         );
     };
 
+    const handleCheckInTimeChange = async (date: dayjs.Dayjs) => {
+        const checkInTime = date.format(DateTimeConstant.HH_MM);
+
+        try {
+            const response = await requestApi<WorkingTimeUpsertDto, WorkingTimeDto>('/api/working-time', 'post', {
+                checkInTime,
+            });
+            setWorkingTime(response.data);
+        } catch (err) {
+            console.log('err: ', err);
+            NotifyUtil.error(NotificationConstant.TITLE, NotificationConstant.SOME_THING_WENT_WRONG);
+        }
+    };
+
     return (
         <div className="w-full h-16 bg-white px-10 flex items-center justify-between">
             <div>Today: {dayjs().format(DateTimeConstant.DD_MM_YYYY)}</div>
             <div>
                 <TimePicker
+                    key={workingTime?.checkInTime}
                     type="time"
                     placeholder="Checking Time"
                     format={DateTimeConstant.HH_MM}
-                    onChange={date => {
-                        console.log(date.format(DateTimeConstant.HH_MM));
-                    }}
+                    onChange={handleCheckInTimeChange}
                     allowClear={false}
+                    defaultValue={workingTime ? dayjs(workingTime?.checkInTime, DateTimeConstant.HH_MM) : undefined}
                 />
             </div>
             <div className="h-full flex items-center justify-center">

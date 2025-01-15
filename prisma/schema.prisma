@@ -80,8 +80,8 @@ model Timer {
 
 model WorkingTime {
   id   String   @id @default(auto()) @map("_id") @db.ObjectId
-  checkingTime String
-  checkoutTime String
+  checkInTime String
+  checkOutTime String
   date DateTime
 
   userId String @unique @db.ObjectId
